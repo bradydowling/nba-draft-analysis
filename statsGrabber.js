@@ -1,7 +1,9 @@
 const { firefox } = require("playwright");
+const { Parser } = require('json2csv');
+const fs = require('fs');
 
 (async () => {
-	const browser = await firefox.launch({headless: false, slowMo: 50});
+	const browser = await firefox.launch({ slowMo: 50 });
 	const page = await browser.newPage();
 	await page.goto("https://www.basketball-reference.com/draft/NBA_2003.html");
 	const players = await page.evaluate(() => {
@@ -27,6 +29,22 @@ const { firefox } = require("playwright");
 		});
 		return players;
 	});
-	console.log(players);
 	await browser.close();
+
+	const fields = Object.keys(players[0]);
+	const opts = { fields };
+
+	try {
+		const parser = new Parser(opts);
+		const playersCsv = parser.parse(players);
+		const csvOutputFile = 'draftPickData.csv';
+		fs.writeFile(csvOutputFile, playersCsv, (err) => {
+			if (err) {
+				throw err;
+			}
+			console.log('The file has been saved!');
+		});
+	} catch (err) {
+		console.error(err);
+	}
 })();
